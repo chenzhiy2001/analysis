@@ -4,13 +4,20 @@ import Mathlib.Algebra.Group.MinimalAxioms
 /-!
 # Analysis I, Section 4.1
 
-This file is a translation of Section 4.1 of Analysis I to Lean 4.  All numbering refers to the original text.
+This file is a translation of Section 4.1 of Analysis I to Lean 4.
+All numbering refers to the original text.
 
-I have attempted to make the translation as faithful a paraphrasing as possible of the original text.  When there is a choice between a more idiomatic Lean solution and a more faithful translation, I have generally chosen the latter.  In particular, there will be places where the Lean code could be "golfed" to be more elegant and idiomatic, but I have consciously avoided doing so.
+I have attempted to make the translation as faithful a paraphrasing as possible of the original
+text. When there is a choice between a more idiomatic Lean solution and a more faithful
+translation, I have generally chosen the latter. In particular, there will be places where the
+Lean code could be "golfed" to be more elegant and idiomatic, but I have consciously avoided
+doing so.
 
 Main constructions and results of this section:
 
-- Definition of the "Section 4.1" integers, `Section_4_1.Int`, as formal differences `a —— b` of natural numbers `a b:ℕ`, up to equivalence.  (This is a quotient of a scaffolding type `Section_4_1.PreInt`, which consists of formal differences without any equivalence imposed.)
+- Definition of the "Section 4.1" integers, `Section_4_1.Int`, as formal differences `a —— b` of
+  natural numbers `a b:ℕ`, up to equivalence.  (This is a quotient of a scaffolding type
+  `Section_4_1.PreInt`, which consists of formal differences without any equivalence imposed.)
 
 - ring operations and order these integers, as well as an embedding of ℕ
 
@@ -58,6 +65,16 @@ theorem Int.eq (a b c d:ℕ): a —— b = c —— d ↔ a + d = c + b := by
   . exact Quotient.exact
   intro h; exact Quotient.sound h
 
+/-- Decidability of equality -/
+instance Int.decidableEq : DecidableEq Int := by
+  intro a b
+  have : ∀ (n:PreInt) (m: PreInt),
+      Decidable (Quotient.mk PreInt.instSetoid n = Quotient.mk PreInt.instSetoid m) := by
+    intro ⟨ a,b ⟩ ⟨ c,d ⟩
+    rw [eq]
+    exact decEq _ _
+  exact Quotient.recOnSubsingleton₂ a b this
+
 /-- Definition 4.1.1 (Integers) -/
 theorem Int.eq_diff (n:Int) : ∃ a b, n = a —— b := by
   apply Quot.ind _ n; intro ⟨ a, b ⟩
@@ -77,7 +94,8 @@ instance Int.instAdd : Add Int where
 theorem Int.add_eq (a b c d:ℕ) : a —— b + c —— d = (a+c)——(b+d) := Quotient.lift₂_mk _ _ _ _
 
 /-- Lemma 4.1.3 (Multiplication well-defined) -/
-theorem Int.mul_congr_left (a b a' b' c d : ℕ) (h: a —— b = a' —— b') : (a*c+b*d) —— (a*d+b*c) = (a'*c+b'*d) —— (a'*d+b'*c) := by
+theorem Int.mul_congr_left (a b a' b' c d : ℕ) (h: a —— b = a' —— b') :
+    (a*c+b*d) —— (a*d+b*c) = (a'*c+b'*d) —— (a'*d+b'*c) := by
   simp only [eq] at h ⊢
   calc
     _ = c*(a+b') + d*(a'+b) := by ring
@@ -85,7 +103,8 @@ theorem Int.mul_congr_left (a b a' b' c d : ℕ) (h: a —— b = a' —— b') 
     _ = _ := by ring
 
 /-- Lemma 4.1.3 (Multiplication well-defined) -/
-theorem Int.mul_congr_right (a b c d c' d' : ℕ) (h: c —— d = c' —— d') : (a*c+b*d) —— (a*d+b*c) = (a*c'+b*d') —— (a*d'+b*c') := by
+theorem Int.mul_congr_right (a b c d c' d' : ℕ) (h: c —— d = c' —— d') :
+    (a*c+b*d) —— (a*d+b*c) = (a*c'+b*d') —— (a*d'+b*c') := by
   simp only [eq] at h ⊢
   calc
     _ = a*(c+d') + b*(c'+d) := by ring
@@ -105,7 +124,8 @@ instance Int.instMul : Mul Int where
     )
 
 /-- Definition 4.1.2 (Multiplication of integers) -/
-theorem Int.mul_eq (a b c d:ℕ) : a —— b * c —— d = (a*c+b*d) —— (a*d+b*c) := Quotient.lift₂_mk _ _ _ _
+theorem Int.mul_eq (a b c d:ℕ) : a —— b * c —— d = (a*c+b*d) —— (a*d+b*c) :=
+  Quotient.lift₂_mk _ _ _ _
 
 instance Int.instOfNat {n:ℕ} : OfNat Int n where
   ofNat := n —— 0
@@ -135,6 +155,9 @@ example : 3 = 3 —— 0 := by rfl
 
 example : 3 = 4 —— 1 := by
   rw [Int.ofNat_eq, Int.eq]
+
+/-- (Not from textbook) 0 is the only natural whose cast is 0 -/
+lemma Int.cast_eq_0_iff_eq_0 (n : ℕ) : (n : Int) = 0 ↔ n = 0 := by sorry
 
 /-- Definition 4.1.4 (Negation of integers) / Exercise 4.1.2 -/
 instance Int.instNeg : Neg Int where
@@ -232,29 +255,32 @@ instance Int.instLE : LE Int where
 
 /-- Definition 4.1.10 (Ordering of the integers) -/
 instance Int.instLT : LT Int where
-  lt n m := (∃ a:ℕ, m = n + a) ∧ n ≠ m
+  lt n m := n ≤ m ∧ n ≠ m
 
-theorem Int.le_iff (n m:Int) : n ≤ m ↔ ∃ a:ℕ, m = n + a := by rfl
+theorem Int.le_iff (a b:Int) : a ≤ b ↔ ∃ t:ℕ, b = a + t := by rfl
 
-theorem Int.lt_iff (n m:Int): n < m ↔ (∃ a:ℕ, m = n + a) ∧ n ≠ m := by rfl
+theorem Int.lt_iff (a b:Int): a < b ↔ (∃ t:ℕ, b = a + t) ∧ a ≠ b := by rfl
 
 /-- Lemma 4.1.11(a) (Properties of order) / Exercise 4.1.7 -/
-theorem Int.gt_iff (a b:Int) : a > b ↔ ∃ n:ℕ, n ≠ 0 ∧ a = b + n := by sorry
+theorem Int.lt_iff_exists_positive_difference (a b:Int) : a < b ↔ ∃ n:ℕ, n ≠ 0 ∧ b = a + n := by sorry
 
 /-- Lemma 4.1.11(b) (Addition preserves order) / Exercise 4.1.7 -/
-theorem Int.add_gt_add_right {a b:Int} (c:Int) (h: a > b) : a+c > b+c := by sorry
+theorem Int.add_lt_add_right {a b:Int} (c:Int) (h: a < b) : a+c < b+c := by sorry
 
 /-- Lemma 4.1.11(c) (Positive multiplication preserves order) / Exercise 4.1.7 -/
-theorem Int.mul_lt_mul_of_pos_left {a b c:Int} (hab : a > b) (hc: c > 0) : a*c > b*c := by sorry
+theorem Int.mul_lt_mul_of_pos_right {a b c:Int} (hab : a < b) (hc: 0 < c) : a*c < b*c := by sorry
 
 /-- Lemma 4.1.11(d) (Negation reverses order) / Exercise 4.1.7 -/
-theorem Int.neg_gt_neg {a b:Int} (h: a > b) : -a < -b := by sorry
+theorem Int.neg_gt_neg {a b:Int} (h: b < a) : -a < -b := by sorry
+
+/-- Lemma 4.1.11(d) (Negation reverses order) / Exercise 4.1.7 -/
+theorem Int.neg_ge_neg {a b:Int} (h: b ≤ a) : -a ≤ -b := by sorry
 
 /-- Lemma 4.1.11(e) (Order is transitive) / Exercise 4.1.7 -/
-theorem Int.gt_trans {a b c:Int} (hab: a > b) (hbc: b > c) : a > c := by sorry
+theorem Int.lt_trans {a b c:Int} (hab: a < b) (hbc: b < c) : a < c := by sorry
 
 /-- Lemma 4.1.11(f) (Order trichotomy) / Exercise 4.1.7 -/
-theorem Int.trichotomous' (a b c:Int) : a > b ∨ a < b ∨ a = b := by sorry
+theorem Int.trichotomous' (a b:Int) : a > b ∨ a < b ∨ a = b := by sorry
 
 /-- Lemma 4.1.11(f) (Order trichotomy) / Exercise 4.1.7 -/
 theorem Int.not_gt_and_lt (a b:Int) : ¬ (a > b ∧ a < b):= by sorry
@@ -265,9 +291,24 @@ theorem Int.not_gt_and_eq (a b:Int) : ¬ (a > b ∧ a = b):= by sorry
 /-- Lemma 4.1.11(f) (Order trichotomy) / Exercise 4.1.7 -/
 theorem Int.not_lt_and_eq (a b:Int) : ¬ (a < b ∧ a = b):= by sorry
 
-/-- (Not from textbook) The order is decidable.  This exercise is only recommended for Lean experts. Alternatively, one can establish this fact in classical logic via `classical; exact Classical.decRel _`.  -/
+/-- (Not from textbook) Establish the decidability of this order. -/
 instance Int.decidableRel : DecidableRel (· ≤ · : Int → Int → Prop) := by
-  sorry
+  intro n m
+  have : ∀ (n:PreInt) (m: PreInt),
+      Decidable (Quotient.mk PreInt.instSetoid n ≤ Quotient.mk PreInt.instSetoid m) := by
+    intro ⟨ a,b ⟩ ⟨ c,d ⟩
+    change Decidable (a —— b ≤ c —— d)
+    cases (a + d).decLe (b + c) with
+      | isTrue h =>
+        apply isTrue
+        sorry
+      | isFalse h =>
+        apply isFalse
+        sorry
+  exact Quotient.recOnSubsingleton₂ n m this
+
+/-- (Not from textbook) 0 is the only additive identity -/
+lemma Int.is_additive_identity_iff_eq_0 (b : Int) : (∀ a, a = a + b) ↔ b = 0 := by sorry
 
 /-- (Not from textbook) Int has the structure of a linear ordering. -/
 instance Int.instLinearOrder : LinearOrder Int where
@@ -284,13 +325,19 @@ theorem Int.neg_one_mul (a:Int) : -1 * a = -a := by sorry
 /-- Exercise 4.1.8 -/
 theorem Int.no_induction : ∃ P: Int → Prop, P 0 ∧ ∀ n, P n → P (n+1) ∧ ¬ ∀ n, P n := by sorry
 
-/-- Exercise 4.1.9 -/
-theorem Int.sq_nonneg (n:Int) : n*n ≥ 0 := by sorry
+/-- A nonnegative number squared is nonnegative. This is a special case of 4.1.9 that's useful for proving the general case. --/
+lemma Int.sq_nonneg_of_pos (n:Int) (h: 0 ≤ n) : 0 ≤ n*n := by sorry
+
+/-- Exercise 4.1.9. The square of any integer is nonnegative. -/
+theorem Int.sq_nonneg (n:Int) : 0 ≤ n*n := by sorry
 
 /-- Exercise 4.1.9 -/
 theorem Int.sq_nonneg' (n:Int) : ∃ (m:Nat), n*n = m := by sorry
 
-/-- Not in textbook: create an equivalence between Int and ℤ.  This requires some familiarity with the API for Mathlib's version of the integers. -/
+/--
+  Not in textbook: create an equivalence between Int and ℤ.
+  This requires some familiarity with the API for Mathlib's version of the integers.
+-/
 abbrev Int.equivInt : Int ≃ ℤ where
   toFun := Quotient.lift (fun ⟨ a, b ⟩ ↦ a - b) (by
     sorry)
@@ -298,15 +345,12 @@ abbrev Int.equivInt : Int ≃ ℤ where
   left_inv n := sorry
   right_inv n := sorry
 
-/-- Not in textbook: equivalence preserves order -/
-abbrev Int.equivInt_order : Int ≃o ℤ where
-  toEquiv := equivInt
-  map_rel_iff' := by sorry
-
-/-- Not in textbook: equivalence preserves ring operations -/
-abbrev Int.equivInt_ring : Int ≃+* ℤ where
+/-- Not in textbook: equivalence preserves order and ring operations -/
+abbrev Int.equivInt_ordered_ring : Int ≃+*o ℤ where
   toEquiv := equivInt
   map_add' := by sorry
   map_mul' := by sorry
+  map_le_map_iff' := by sorry
+
 
 end Section_4_1

@@ -4,13 +4,20 @@ import Mathlib.Algebra.Group.MinimalAxioms
 /-!
 # Analysis I, Section 4.2
 
-This file is a translation of Section 4.2 of Analysis I to Lean 4.  All numbering refers to the original text.
+This file is a translation of Section 4.2 of Analysis I to Lean 4.
+All numbering refers to the original text.
 
-I have attempted to make the translation as faithful a paraphrasing as possible of the original text.  When there is a choice between a more idiomatic Lean solution and a more faithful translation, I have generally chosen the latter.  In particular, there will be places where the Lean code could be "golfed" to be more elegant and idiomatic, but I have consciously avoided doing so.
+I have attempted to make the translation as faithful a paraphrasing as possible of the original
+text. When there is a choice between a more idiomatic Lean solution and a more faithful
+translation, I have generally chosen the latter. In particular, there will be places where the
+Lean code could be "golfed" to be more elegant and idiomatic, but I have consciously avoided
+doing so.
 
 Main constructions and results of this section:
 
-- Definition of the "Section 4.2" rationals, `Section_4_2.Int`, as formal differences `a // b` of integers `a b:ℤ`, up to equivalence.  (This is a quotient of a scaffolding type `Section_4_2.PreRat`, which consists of formal differences without any equivalence imposed.)
+- Definition of the "Section 4.2" rationals, `Section_4_2.Int`, as formal differences `a // b` of
+  integers `a b:ℤ`, up to equivalence.  (This is a quotient of a scaffolding type
+  `Section_4_2.PreRat`, which consists of formal differences without any equivalence imposed.)
 
 - field operations and order on these rationals, as well as an embedding of ℕ and ℤ
 
@@ -34,12 +41,14 @@ instance PreRat.instSetoid : Setoid PreRat where
     }
 
 @[simp]
-theorem PreRat.eq (a b c d:ℤ) (hb: b ≠ 0) (hd: d ≠ 0): (⟨ a,b,hb ⟩: PreRat) ≈ ⟨ c,d,hd ⟩ ↔ a * d = c * b := by rfl
+theorem PreRat.eq (a b c d:ℤ) (hb: b ≠ 0) (hd: d ≠ 0) :
+    (⟨ a,b,hb ⟩: PreRat) ≈ ⟨ c,d,hd ⟩ ↔ a * d = c * b := by rfl
 
 abbrev Rat := Quotient PreRat.instSetoid
 
 /-- We give division a "junk" value of 0//1 if the denominator is zero -/
-abbrev Rat.formalDiv (a b:ℤ)  : Rat := Quotient.mk PreRat.instSetoid (if h:b ≠ 0 then ⟨ a,b,h ⟩ else ⟨ 0, 1, by decide ⟩)
+abbrev Rat.formalDiv (a b:ℤ)  : Rat :=
+  Quotient.mk PreRat.instSetoid (if h:b ≠ 0 then ⟨ a,b,h ⟩ else ⟨ 0, 1, by decide ⟩)
 
 infix:100 " // " => Rat.formalDiv
 
@@ -54,6 +63,13 @@ theorem Rat.eq_diff (n:Rat) : ∃ a b, b ≠ 0 ∧ n = a // b := by
   simp [formalDiv, h]
   rfl
 
+/--
+  Decidability of equality. Hint: modify the proof of `DecidableEq Int` from the previous
+  section. However, because formal division handles the case of zero denominator separately, it
+  may be more convenient to avoid that operation and work directly with the `Quotient` API.
+-/
+instance Rat.decidableEq : DecidableEq Rat := by
+  sorry
 
 /-- Lemma 4.2.3 (Addition well-defined) -/
 instance Rat.add_inst : Add Rat where
@@ -67,7 +83,8 @@ instance Rat.add_inst : Add Rat where
   )
 
 /-- Definition 4.2.2 (Addition of rationals) -/
-theorem Rat.add_eq (a c:ℤ) {b d:ℤ} (hb: b ≠ 0) (hd: d ≠ 0) :(a // b) + (c // d) = (a*d + b*c) // (b*d) := by
+theorem Rat.add_eq (a c:ℤ) {b d:ℤ} (hb: b ≠ 0) (hd: d ≠ 0) :
+    (a // b) + (c // d) = (a*d + b*c) // (b*d) := by
   convert Quotient.lift₂_mk _ _ _ _
   all_goals simp [hb, hd]
 
@@ -76,7 +93,8 @@ instance Rat.mul_inst : Mul Rat where
   mul := Quotient.lift₂ (fun ⟨ a, b, h1 ⟩ ⟨ c, d, h2 ⟩ ↦ (a*c) // (b*d)) (by sorry)
 
 /-- Definition 4.2.2 (Multiplication of rationals) -/
-theorem Rat.mul_eq (a c:ℤ) {b d:ℤ} (hb: b ≠ 0) (hd: d ≠ 0) :(a // b) * (c // d) = (a*c) // (b*d) := by
+theorem Rat.mul_eq (a c:ℤ) {b d:ℤ} (hb: b ≠ 0) (hd: d ≠ 0) :
+    (a // b) * (c // d) = (a*c) // (b*d) := by
   convert Quotient.lift₂_mk _ _ _ _
   all_goals simp [hb, hd]
 
@@ -117,7 +135,10 @@ lemma Rat.neg_of_int (a:ℤ) : - (a:Rat) = (-a:ℤ) := by
 
 theorem Rat.coe_Int_inj : Function.Injective (fun n:ℤ ↦ (n:Rat)) := by sorry
 
-/-- Whereas the book leaves the inverse of 0 undefined, it is more convenient in Lean to assign a "junk" value to this inverse; we arbitrarily choose this junk value to be 0. -/
+/--
+  Whereas the book leaves the inverse of 0 undefined, it is more convenient in Lean to assign a
+  "junk" value to this inverse; we arbitrarily choose this junk value to be 0.
+-/
 instance Rat.instInv : Inv Rat where
   inv := Quotient.lift (fun ⟨ a, b, h1 ⟩ ↦ b // a) (by
     sorry -- hint: split into the `a=0` and `a≠0` cases
@@ -143,7 +164,8 @@ AddGroup.ofLeftAxioms (by
   have hdf : d*f ≠ 0 := Int.mul_ne_zero hd hf
   have hbdf : b*d*f ≠ 0 := Int.mul_ne_zero hbd hf
 
-  rw [add_eq _ _ hb hd, add_eq _ _ hbd hf, add_eq _ _ hd hf, add_eq _ _ hb hdf, ←mul_assoc b d f, eq _ _ hbdf hbdf]
+  rw [add_eq _ _ hb hd, add_eq _ _ hbd hf, add_eq _ _ hd hf,
+      add_eq _ _ hb hdf, ←mul_assoc b d f, eq _ _ hbdf hbdf]
   ring
 )
  (by sorry) (by sorry)
@@ -217,7 +239,9 @@ def Rat.coe_int_hom : ℤ →+* Rat where
   map_add' := by sorry
   map_mul' := by sorry
 
-/-- (Not from textbook) The textbook rationals are isomorphic (as a field) to the Mathlib rationals -/
+/--
+  (Not from textbook) The textbook rationals are isomorphic (as a field) to the Mathlib rationals.
+-/
 def Rat.equiv_rat : ℚ ≃+* Rat where
   toFun n := (n:Rat)
   invFun := by sorry
@@ -225,6 +249,7 @@ def Rat.equiv_rat : ℚ ≃+* Rat where
   map_mul' := by sorry
   left_inv := by sorry
   right_inv := by sorry
+
 
 /-- Definition 4.2.6 (positivity) -/
 def Rat.isPos (q:Rat) : Prop := ∃ a b:ℤ, a > 0 ∧ b > 0 ∧ q = a/b
@@ -282,9 +307,33 @@ theorem Rat.add_lt_add_right {x y:Rat} (z:Rat) (hxy: x < y) : x + z < y + z := b
 /-- Proposition 4.2.9(e) (positive multiplication preserves order) / Exercise 4.2.5 -/
 theorem Rat.mul_lt_mul_right {x y z:Rat} (hxy: x < y) (hz: z.isPos) : x * z < y * z := by sorry
 
-/-- (Not from textbook) The order is decidable.  This exercise is only recommended for Lean experts.  Alternatively, one can establish this fact in classical logic via `classical; exact Classical.decRel _` -/
+/-- (Not from textbook) Establish the decidability of this order. -/
 instance Rat.decidableRel : DecidableRel (· ≤ · : Rat → Rat → Prop) := by
-  sorry
+  intro n m
+  have : ∀ (n:PreRat) (m: PreRat),
+      Decidable (Quotient.mk PreRat.instSetoid n ≤ Quotient.mk PreRat.instSetoid m) := by
+    intro ⟨ a,b,hb ⟩ ⟨ c,d,hd ⟩
+    -- at this point, the goal is morally `Decidable(a//b ≤ c//d)`, but there are technical
+    -- issues due to the junk value of formal divisionwhen the denominator vanishes.
+    -- It may be more convenient to avoid formal division and work directly with `Quotient.mk`.
+    cases (0:ℤ).decLe (b*d) with
+      | isTrue hbd =>
+        cases (a * d).decLe (b * c) with
+          | isTrue h =>
+            apply isTrue
+            sorry
+          | isFalse h =>
+            apply isFalse
+            sorry
+      | isFalse hbd =>
+        cases (b * c).decLe (a * d) with
+          | isTrue h =>
+            apply isTrue
+            sorry
+          | isFalse h =>
+            apply isFalse
+            sorry
+  exact Quotient.recOnSubsingleton₂ n m this
 
 /-- (Not from textbook) Rat has the structure of a linear ordering. -/
 instance Rat.instLinearOrder : LinearOrder Rat where
@@ -305,10 +354,14 @@ instance Rat.instIsStrictOrderedRing : IsStrictOrderedRing Rat where
   zero_le_one := by sorry
 
 /-- Exercise 4.2.6 -/
-theorem Rat.mul_lt_mul_right_of_neg (x y z:Rat) (hxy: x < y) (hz: z.isNeg) : x * z > y * z := by sorry
+theorem Rat.mul_lt_mul_right_of_neg (x y z:Rat) (hxy: x < y) (hz: z.isNeg) : x * z > y * z := by
+  sorry
 
 
-/-- Not in textbook: create an equivalence between Rat and ℚ.  This requires some familiarity with the API for Mathlib's version of the rationals. -/
+/--
+  Not in textbook: create an equivalence between Rat and ℚ. This requires some familiarity with
+  the API for Mathlib's version of the rationals.
+-/
 abbrev Rat.equivRat : Rat ≃ ℚ where
   toFun := Quotient.lift (fun ⟨ a, b, h ⟩ ↦ a / b) (by
     sorry)
@@ -326,16 +379,5 @@ abbrev Rat.equivRat_ring : Rat ≃+* ℚ where
   toEquiv := equivRat
   map_add' := by sorry
   map_mul' := by sorry
-
-
-
-
-
-
-
-
-
-
-
 
 end Section_4_2
