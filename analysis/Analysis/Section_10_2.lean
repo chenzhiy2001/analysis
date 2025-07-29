@@ -2,7 +2,7 @@ import Mathlib.Tactic
 import Analysis.Section_9_6
 
 /-!
-# Analysis I, Section 10.2
+# Analysis I, Section 10.2: Local maxima, local minima, and derivatives
 
 I have attempted to make the translation as faithful a paraphrasing as possible of the original
 text.  When there is a choice between a more idiomatic Lean solution and a more faithful
@@ -11,9 +11,9 @@ the Lean code could be "golfed" to be more elegant and idiomatic, but I have con
 doing so.
 
 Main constructions and results of this section:
-- Relation between local extrema and derivatives
-- Rolle's theorem
-- mean value theorem
+- Relation between local extrema and derivatives.
+- Rolle's theorem.
+- mean value theorem.
 
 -/
 
@@ -26,28 +26,20 @@ theorem IsLocalMaxOn.iff (X:Set ℝ) (f:ℝ → ℝ) (x₀:ℝ) :
   ∃ δ > 0, IsMaxOn f (X ∩ Set.Ioo (x₀ - δ) (x₀ + δ)) x₀ := by
   simp [isMaxOn_iff, IsLocalMaxOn, IsMaxFilter, nhdsWithin.eq_1, Filter.eventually_inf_principal,
         Metric.eventually_nhds_iff, Real.dist_eq, abs_sub_lt_iff ]
-  apply exists_congr; intro ε
-  apply and_congr_right; intro hε
-  apply forall_congr'; intro x
+  peel with ε hε x
   constructor
-  . intro h hx hxm hxp
-    exact h (by linarith) (by linarith) hx
-  intro h hxm hxp hx
-  exact h hx (by linarith) (by linarith)
+  . intro h hx _ _; exact h (by linarith) (by linarith) hx
+  intro h _ _ hx; exact h hx (by linarith) (by linarith)
 
 theorem IsLocalMinOn.iff (X:Set ℝ) (f:ℝ → ℝ) (x₀:ℝ) :
   IsLocalMinOn f X x₀ ↔
   ∃ δ > 0, IsMinOn f (X ∩ Set.Ioo (x₀ - δ) (x₀ + δ)) x₀ := by
   simp [isMinOn_iff, IsLocalMinOn, IsMinFilter, nhdsWithin.eq_1, Filter.eventually_inf_principal,
         Metric.eventually_nhds_iff, Real.dist_eq, abs_sub_lt_iff ]
-  apply exists_congr; intro ε
-  apply and_congr_right; intro hε
-  apply forall_congr'; intro x
+  peel with ε hε x
   constructor
-  . intro h hx hxm hxp
-    exact h (by linarith) (by linarith) hx
-  intro h hxm hxp hx
-  exact h hx (by linarith) (by linarith)
+  . intro h hx _ _; exact h (by linarith) (by linarith) hx
+  intro h _ _ hx; exact h hx (by linarith) (by linarith)
 
 /-- Example 10.2.3 -/
 abbrev f_10_2_3 : ℝ → ℝ := fun x ↦ x^2 - x^4
@@ -94,13 +86,13 @@ theorem IsMaxOn.deriv_eq_zero_counter : ∃ (a b:ℝ) (hab: a < b) (f:ℝ → �
   sorry
 
 /-- Theorem 10.2.7 (Rolle's theorem) / Exercise 10.2.4 -/
-theorem HasDerivWithinAt.exist_zero {a b:ℝ} (hab: a < b) {g:ℝ → ℝ}
+theorem _root_.HasDerivWithinAt.exist_zero {a b:ℝ} (hab: a < b) {g:ℝ → ℝ}
   (hcont: ContinuousOn g (Set.Icc a b)) (hderiv: DifferentiableOn ℝ g (Set.Ioo a b))
   (hgab: g a = g b) : ∃ x ∈ Set.Ioo a b, HasDerivWithinAt g 0 (Set.Ioo a b) x := by
   sorry
 
 /-- Corollary 10.2.9 (Mean value theorem ) / Exercise 10.2.5 -/
-theorem HasDerivWithinAt.mean_value {a b:ℝ} (hab: a < b) {f:ℝ → ℝ}
+theorem _root_.HasDerivWithinAt.mean_value {a b:ℝ} (hab: a < b) {f:ℝ → ℝ}
   (hcont: ContinuousOn f (Set.Icc a b)) (hderiv: DifferentiableOn ℝ f (Set.Ioo a b)) :
   ∃ x ∈ Set.Ioo a b, HasDerivWithinAt f ((f b - f a) / (b - a)) (Set.Ioo a b) x := by
   sorry
@@ -126,7 +118,7 @@ theorem lipschitz_bound {M a b:ℝ} (hM: M > 0) (hab: a < b) {f:ℝ → ℝ}
   sorry
 
 /-- Exercise 10.2.7 -/
-theorem UniformContinuousOn.of_lipschitz {f:ℝ → ℝ}
+theorem _root_.UniformContinuousOn.of_lipschitz {f:ℝ → ℝ}
   (hcont: ContinuousOn f Set.univ)
   (hderiv: DifferentiableOn ℝ f Set.univ)
   (hlip: BddOn (deriv f) Set.univ) :

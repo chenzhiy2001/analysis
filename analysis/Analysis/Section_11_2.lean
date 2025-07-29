@@ -2,7 +2,7 @@ import Mathlib.Tactic
 import Analysis.Section_11_1
 
 /-!
-# Analysis I, Section 11.2
+# Analysis I, Section 11.2: Piecewise constant functions
 
 I have attempted to make the translation as faithful a paraphrasing as possible of the original
 text. When there is a choice between a more idiomatic Lean solution and a more faithful
@@ -11,7 +11,8 @@ Lean code could be "golfed" to be more elegant and idiomatic, but I have conscio
 doing so.
 
 Main constructions and results of this section:
-
+- Piecewise constant functions.
+- The piecewise constant integral.
 
 -/
 
@@ -19,29 +20,76 @@ namespace Chapter11
 open BoundedInterval
 
 /-- Definition 11.2.1 -/
-abbrev ConstantOn (f: ℝ → ℝ) (X: Set ℝ) : Prop := ∃ c, ∀ x ∈ X, f x = c
+abbrev Constant {X Y:Type} (f: X → Y) : Prop := ∃ c, ∀ x, f x = c
 
 open Classical in
-noncomputable abbrev constant_value (f:ℝ → ℝ) (X: Set ℝ) : ℝ :=
-  if h: ConstantOn f X then h.choose else 0
+noncomputable abbrev constant_value {X Y:Type} [hY: Nonempty Y] (f:X → Y) : Y :=
+  if h: Constant f then h.choose else hY.some
+
+theorem Constant.eq {X Y:Type} {f: X → Y} [Nonempty Y] (h: Constant f) (x:X) :
+  f x = constant_value f := by
+  rw [constant_value, dif_pos h]
+  exact h.choose_spec x
+
+theorem Constant.of_const {X Y:Type} {f:X → Y} {c:Y} (h: ∀ x, f x = c) :
+  Constant f := by use c
+
+theorem Constant.const_eq {X Y:Type} {f:X → Y} [hX: Nonempty X] [Nonempty Y] {c:Y} (h: ∀ x, f x = c) :
+  constant_value f = c := by
+    rw [←eq (of_const h) hX.some, h hX.some]
+
+theorem Constant.of_subsingleton {X Y:Type} [Subsingleton X] [hY: Nonempty Y] {f:X → Y} :
+  Constant f := by
+  by_cases h:Nonempty X
+  . use f (h.some : X); intro x; congr; exact Subsingleton.elim x h.some
+  use hY.some; intro x; simp at h; exact IsEmpty.elim h x
+
+abbrev ConstantOn (f: ℝ → ℝ) (X: Set ℝ) : Prop := Constant (fun x : X ↦ f ↑x)
+
+noncomputable abbrev constant_value_on (f:ℝ → ℝ) (X: Set ℝ) : ℝ := constant_value (fun x : X ↦ f ↑x)
 
 theorem ConstantOn.eq {f: ℝ → ℝ} {X: Set ℝ} (h: ConstantOn f X) {x:ℝ} (hx: x ∈ X) :
-  f x = constant_value f X := by
-  rw [constant_value, dif_pos h]
-  exact h.choose_spec x hx
+  f x = constant_value_on f X := by
+  convert Constant.eq h ⟨ x, hx ⟩
 
 theorem ConstantOn.of_const {f:ℝ → ℝ} {X: Set ℝ} {c:ℝ} (h: ∀ x ∈ X, f x = c) :
-  ConstantOn f X := by use c
+  ConstantOn f X := by use c; rintro ⟨ x, hx ⟩; simp [h x hx]
+
+theorem ConstantOn.of_const' (c:ℝ) (X:Set ℝ): ConstantOn (fun _ ↦ c) X := by
+  apply ConstantOn.of_const (c := c)
+  simp
 
 theorem ConstantOn.const_eq {f:ℝ → ℝ} {X: Set ℝ} (hX: X.Nonempty) {c:ℝ} (h: ∀ x ∈ X, f x = c) :
-  constant_value f X = c := by
+  constant_value_on f X = c := by
     rw [←eq (of_const h) hX.some_mem, h _ hX.some_mem]
+
+theorem ConstantOn.congr {f g: ℝ → ℝ} {X: Set ℝ} (h: ∀ x ∈ X, f x = g x) : ConstantOn f X ↔ ConstantOn g X := by
+  simp [ConstantOn]; rw [iff_iff_eq]
+  congr; ext ⟨ x, hx ⟩; simp [h x hx]
+
+theorem ConstantOn.of_subsingleton {f: ℝ → ℝ} {X: Set ℝ} [Subsingleton X] :
+  ConstantOn f X := Constant.of_subsingleton
+
+theorem constant_value_on_congr {f g: ℝ → ℝ} {X: Set ℝ} (h: ∀ x ∈ X, f x = g x) :
+  constant_value_on f X = constant_value_on g X := by
+  simp [constant_value_on]
+  congr; ext ⟨ x, hx ⟩; simp [h x hx]
 
 /-- Definition 11.2.3 (Piecewise constant functions I) -/
 abbrev PiecewiseConstantWith (f:ℝ → ℝ) {I: BoundedInterval} (P: Partition I) : Prop := ∀ J ∈ P, ConstantOn f (J:Set ℝ)
 
 theorem PiecewiseConstantWith.def (f:ℝ → ℝ) {I: BoundedInterval} {P: Partition I} :
-  PiecewiseConstantWith f P ↔ ∀ J ∈ P, ∃ c, ∀ x ∈ J, f x = c := by rfl
+  PiecewiseConstantWith f P ↔ ∀ J ∈ P, ∃ c, ∀ x ∈ J, f x = c := by
+    simp [PiecewiseConstantWith, ConstantOn, Constant, mem_iff]
+
+theorem PiecewiseConstantWith.congr {f g:ℝ → ℝ} {I: BoundedInterval} {P: Partition I}
+  (h: ∀ x ∈ (I:Set ℝ), f x = g x) :
+  PiecewiseConstantWith f P ↔ PiecewiseConstantWith g P := by
+  simp [PiecewiseConstantWith]
+  peel with J hJ
+  apply ConstantOn.congr; intro x hx
+  have := P.contains _ hJ; rw [subset_iff] at this
+  solve_by_elim
 
 /-- Definition 11.2.5 (Piecewise constant functions I) -/
 abbrev PiecewiseConstantOn (f:ℝ → ℝ) (I: BoundedInterval) : Prop := ∃ P : Partition I, PiecewiseConstantWith f P
@@ -49,9 +97,9 @@ abbrev PiecewiseConstantOn (f:ℝ → ℝ) (I: BoundedInterval) : Prop := ∃ P 
 theorem PiecewiseConstantOn.def (f:ℝ → ℝ) (I: BoundedInterval):
   PiecewiseConstantOn f I ↔ ∃ P : Partition I, ∀ J ∈ P, ConstantOn f (J:Set ℝ) := by rfl
 
-
-
-
+theorem PiecewiseConstantOn.congr {f g: ℝ → ℝ} {I: BoundedInterval} (h: ∀ x ∈ (I:Set ℝ), f x = g x) :
+  PiecewiseConstantOn f I ↔ PiecewiseConstantOn g I := by
+  simp_rw [PiecewiseConstantOn, PiecewiseConstantWith.congr h]
 
 /-- Example 11.2.4 / Example 11.2.6 -/
 noncomputable abbrev f_11_2_4 : ℝ → ℝ := fun x ↦
@@ -85,27 +133,27 @@ theorem PiecewiseConstantWith.mono {f:ℝ → ℝ} {I: BoundedInterval} {P P': P
 
 /-- Lemma 11.2.8 / Exercise 11.2.2 -/
 theorem PiecewiseConstantOn.add {f g: ℝ → ℝ} {I: BoundedInterval}
-  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn f I) : PiecewiseConstantOn (f + g) I := by
+  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn g I) : PiecewiseConstantOn (f + g) I := by
   sorry
 
 /-- Lemma 11.2.8 / Exercise 11.2.2 -/
 theorem PiecewiseConstantOn.sub {f g: ℝ → ℝ} {I: BoundedInterval}
-  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn f I) : PiecewiseConstantOn (f - g) I := by
+  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn g I) : PiecewiseConstantOn (f - g) I := by
   sorry
 
 /-- Lemma 11.2.8 / Exercise 11.2.2 -/
 theorem PiecewiseConstantOn.max {f g: ℝ → ℝ} {I: BoundedInterval}
-  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn f I) : PiecewiseConstantOn (max f g) I := by
+  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn g I) : PiecewiseConstantOn (max f g) I := by
   sorry
 
 /-- Lemma 11.2.8 / Exercise 11.2.2 -/
 theorem PiecewiseConstantOn.min {f g: ℝ → ℝ} {I: BoundedInterval}
-  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn f I) : PiecewiseConstantOn (min f g) I := by
+  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn g I) : PiecewiseConstantOn (min f g) I := by
   sorry
 
 /-- Lemma 11.2.8 / Exercise 11.2.2 -/
 theorem PiecewiseConstantOn.mul {f g: ℝ → ℝ} {I: BoundedInterval}
-  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn f I) : PiecewiseConstantOn (f * g) I := by
+  (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn g I) : PiecewiseConstantOn (f * g) I := by
   sorry
 
 /-- Lemma 11.2.8 / Exercise 11.2.2 -/
@@ -120,7 +168,15 @@ theorem PiecewiseConstantOn.div {f g: ℝ → ℝ} {I: BoundedInterval}
 
 /-- Definition 11.2.9 (Piecewise constant integral I)-/
 noncomputable abbrev PiecewiseConstantWith.integ (f:ℝ → ℝ) {I: BoundedInterval} (P: Partition I)  :
-  ℝ := ∑ J ∈ P.intervals, constant_value f (J:Set ℝ) * |J|ₗ
+  ℝ := ∑ J ∈ P.intervals, constant_value_on f (J:Set ℝ) * |J|ₗ
+
+theorem PiecewiseConstantWith.integ_congr {f g:ℝ → ℝ} {I: BoundedInterval} {P: Partition I}
+  (h: ∀ x ∈ (I:Set ℝ), f x = g x) : PiecewiseConstantWith.integ f P = PiecewiseConstantWith.integ g P := by
+  simp only [integ, Subtype.forall]
+  apply Finset.sum_congr rfl; intro J hJ; congr 1
+  apply constant_value_on_congr; intro x hx
+  have := P.contains _ hJ; rw [subset_iff] at this
+  aesop
 
 /-- Example 11.2.12 -/
 noncomputable abbrev f_11_2_12 : ℝ → ℝ := fun x ↦
@@ -170,6 +226,15 @@ theorem PiecewiseConstantOn.integ_def {f:ℝ → ℝ} {I: BoundedInterval} {P: P
   simp [PiecewiseConstantOn.integ, h']
   exact PiecewiseConstantWith.integ_eq h'.choose_spec h
 
+theorem PiecewiseConstantOn.integ_congr {f g:ℝ → ℝ} {I: BoundedInterval}
+  (h: ∀ x ∈ (I:Set ℝ), f x = g x) : PiecewiseConstantOn.integ f I = PiecewiseConstantOn.integ g I := by
+  by_cases hf : PiecewiseConstantOn f I
+  <;> have hg := hf <;> rw [PiecewiseConstantOn.congr h] at hg <;> simp [integ, hf, hg]
+  rw [PiecewiseConstantWith.integ_congr h, ←integ_def ?_, ←integ_def ?_]
+  . exact hg.choose_spec
+  rw [←PiecewiseConstantWith.congr h]
+  exact hf.choose_spec
+
 /-- Example 11.2.15 -/
 example : PiecewiseConstantOn.integ f_11_2_4 (Icc 1 6) = 10 := by
   sorry
@@ -188,7 +253,7 @@ theorem PiecewiseConstantOn.integ_smul {f: ℝ → ℝ} {I: BoundedInterval} (c:
   sorry
 
 /-- Theorem 11.2.16 (c) (Laws of integration) / Exercise 11.2.4 -/
-theorem PiecewiseConstantOn.integ_sub {f g: ℝ → ℝ} {I: BoundedInterval} (c:ℝ)
+theorem PiecewiseConstantOn.integ_sub {f g: ℝ → ℝ} {I: BoundedInterval}
   (hf: PiecewiseConstantOn f I) (hg: PiecewiseConstantOn g I) :
   PiecewiseConstantOn.integ (f - g) I = PiecewiseConstantOn.integ f I - PiecewiseConstantOn.integ g I
    := by
@@ -209,7 +274,12 @@ theorem PiecewiseConstantOn.integ_mono {f g: ℝ → ℝ} {I: BoundedInterval} (
 
 /-- Theorem 11.2.16 (f) (Laws of integration) / Exercise 11.2.4 -/
 theorem PiecewiseConstantOn.integ_const (c: ℝ) (I: BoundedInterval) :
-  PiecewiseConstantOn.integ (fun _ ↦ c) I ≤ c * |I|ₗ := by
+  PiecewiseConstantOn.integ (fun _ ↦ c) I = c * |I|ₗ := by
+  sorry
+
+/-- Theorem 11.2.16 (f) (Laws of integration) / Exercise 11.2.4 -/
+theorem PiecewiseConstantOn.integ_const' {f:ℝ → ℝ} {I: BoundedInterval} (h: ConstantOn f I) :
+  PiecewiseConstantOn.integ f I = (constant_value_on f I) * |I|ₗ := by
   sorry
 
 open Classical in
@@ -228,8 +298,7 @@ theorem PiecewiseConstantOn.integ_of_extend {I J: BoundedInterval} (hIJ: I ⊆ J
 
 /-- Theorem 11.2.16 (h) (Laws of integration) / Exercise 11.2.4 -/
 theorem PiecewiseConstantOn.of_join {I J K: BoundedInterval} (hIJK: K.joins I J)
-  {f: ℝ → ℝ} (h: PiecewiseConstantOn f K) :
-  PiecewiseConstantOn f I ∧ PiecewiseConstantOn f J := by
+  (f: ℝ → ℝ) : PiecewiseConstantOn f K ↔ PiecewiseConstantOn f I ∧ PiecewiseConstantOn f J := by
   sorry
 
 /-- Theorem 11.2.16 (h) (Laws of integration) / Exercise 11.2.4 -/
@@ -237,14 +306,5 @@ theorem PiecewiseConstantOn.integ_of_join {I J K: BoundedInterval} (hIJK: K.join
   {f: ℝ → ℝ} (h: PiecewiseConstantOn f K) :
   PiecewiseConstantOn.integ f K = PiecewiseConstantOn.integ f I + PiecewiseConstantOn.integ f J := by
   sorry
-
-
-
-
-
-
-
-
-
 
 end Chapter11
