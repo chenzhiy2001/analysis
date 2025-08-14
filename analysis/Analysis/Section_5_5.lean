@@ -26,20 +26,20 @@ theorem Real.lowerBound_def (E: Set Real) (M: Real) : M ∈ lowerBounds E ↔ �
   mem_lowerBounds
 
 /-- API for Example 5.5.2 -/
-theorem Real.Icc_def (x y:Real) : Set.Icc x y = { z | x ≤ z ∧ z ≤ y } := rfl
+theorem Real.Icc_def (x y:Real) : .Icc x y = { z | x ≤ z ∧ z ≤ y } := rfl
 
 /-- API for Example 5.5.2 -/
 theorem Real.mem_Icc (x y z:Real) : z ∈ Set.Icc x y ↔ x ≤ z ∧ z ≤ y := by
   simp [Real.Icc_def]
 
 /-- Example 5.5.2 -/
-example (M: Real) : M ∈ upperBounds (Set.Icc 0 1) ↔ M ≥ 1 := by sorry
+example (M: Real) : M ∈ upperBounds (.Icc 0 1) ↔ M ≥ 1 := by sorry
 
 /-- API for Example 5.5.3 -/
-theorem Real.Ioi_def (x:Real) : Set.Ioi x = { z | z > x } := rfl
+theorem Real.Ioi_def (x:Real) : .Ioi x = { z | z > x } := rfl
 
 /-- Example 5.5.3 -/
-example : ¬ ∃ M, M ∈ upperBounds (Set.Ioi 0) := by sorry
+example : ¬ ∃ M, M ∈ upperBounds (.Ioi 0) := by sorry
 
 /-- Example 5.5.4 -/
 example : ∀ M, M ∈ upperBounds (∅ : Set Real) := by sorry
@@ -56,7 +56,7 @@ theorem Real.isGLB_def (E: Set Real) (M: Real) :
     IsGLB E M ↔ M ∈ lowerBounds E ∧ ∀ M' ∈ lowerBounds E, M' ≤ M := by rfl
 
 /-- Example 5.5.6 -/
-example : IsLUB (Set.Icc 0 1) 1 := by sorry
+example : IsLUB (.Icc 0 1) 1 := by sorry
 
 /-- Example 5.5.7 -/
 example : ¬∃ M, IsLUB (∅: Set Real) M := by sorry
@@ -103,7 +103,7 @@ lemma Real.LUB_claim1 (n : ℕ) {E: Set Real} (hE: Set.Nonempty E) (hbound: BddA
   observe hx₀ : x₀ ∈ E
 
   set ε := ((1/(n+1):ℚ):Real)
-  have hpos : ε.isPos := by simp [isPos_iff, ε, ←lt_of_coe]; positivity
+  have hpos : ε.IsPos := by simp [isPos_iff, ε, ←lt_of_coe]; positivity
   apply existsUnique_of_exists_of_unique
   . rw [bddAbove_def] at hbound; obtain ⟨ M, hbound ⟩ := hbound
     obtain ⟨ K, _, hK ⟩ := le_mul hpos M
@@ -251,7 +251,7 @@ theorem Real.exist_sqrt_two : ∃ x:Real, x^2 = 2 := by
   have claim3 : IsLUB E x := by solve_by_elim [ExtendedReal.sup_of_bounded]
   have claim4 : x ≥ 1 := by rw [isLUB_def, upperBound_def] at claim3; solve_by_elim [claim3.1]
   have claim5 : x ≤ 2 := by rw [isLUB_def] at claim3; solve_by_elim [claim3.2]
-  have claim6 : x.isPos := by rw [isPos_iff]; linarith
+  have claim6 : x.IsPos := by rw [isPos_iff]; linarith
   use x
   rcases trichotomous' (x^2) 2 with h | h | h
   . have claim11: ∃ ε, 0 < ε ∧ ε < 1 ∧ x^2 - 4*ε > 2 := by

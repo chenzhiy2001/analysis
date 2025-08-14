@@ -182,9 +182,11 @@ lemma Nat.le_iff (n m:Nat) : n ≤ m ↔ ∃ a:Nat, m = n + a := by rfl
 lemma Nat.lt_iff (n m:Nat) : n < m ↔ (∃ a:Nat, m = n + a) ∧ n ≠ m := by rfl
 
 /-- Compare with Mathlib's `ge_iff_le`. -/
+@[symm]
 lemma Nat.ge_iff_le (n m:Nat) : n ≥ m ↔ m ≤ n := by rfl
 
 /-- Compare with Mathlib's `gt_iff_lt`. -/
+@[symm]
 lemma Nat.gt_iff_lt (n m:Nat) : n > m ↔ m < n := by rfl
 
 /-- Compare with Mathlib's `Nat.le_of_lt`. -/
@@ -217,10 +219,18 @@ theorem Nat.succ_gt_self (n:Nat) : n++ > n := by
 theorem Nat.ge_refl (a:Nat) : a ≥ a := by
   sorry
 
+@[refl]
+theorem Nat.le_refl (a:Nat) : a ≤ a := a.ge_refl
+
+/-- The refl tag allows for the `rfl` tactic to work for inequalities. -/
+example (a b:Nat): a+b ≥ a+b := by rfl
+
 /-- (b) (Order is transitive).  The `obtain` tactic will be useful here.
     Compare with Mathlib's `Nat.le_trans`. -/
 theorem Nat.ge_trans {a b c:Nat} (hab: a ≥ b) (hbc: b ≥ c) : a ≥ c := by
   sorry
+
+theorem Nat.le_trans {a b c:Nat} (hab: a ≤ b) (hbc: b ≤ c) : a ≤ c := Nat.ge_trans hbc hab
 
 /-- (c) (Order is anti-symmetric). Compare with Mathlib's `Nat.le_antisymm`. -/
 theorem Nat.ge_antisymm {a b:Nat} (hab: a ≥ b) (hba: b ≥ a) : a = b := by
@@ -260,7 +270,7 @@ theorem Nat.ne_of_gt (a b:Nat) : a > b → a ≠ b := by
 /-- If a > b and a < b then contradiction -/
 theorem Nat.not_lt_of_gt (a b:Nat) : a < b ∧ a > b → False := by
   intro h
-  have := (ge_antisymm (Nat.le_of_lt h.1) (Nat.le_of_lt h.2)).symm
+  have := (ge_antisymm (le_of_lt h.1) (le_of_lt h.2)).symm
   have := ne_of_lt _ _ h.1
   contradiction
 
@@ -283,17 +293,18 @@ theorem Nat.zero_le (a:Nat) : 0 ≤ a := by
   sorry
 
 /-- Proposition 2.2.13 (Trichotomy of order for natural numbers) / Exercise 2.2.4
-    Compare with Mathlib's `trichotomous`. -/
+    Compare with Mathlib's `trichotomous`.  Parts of this theorem have been placed
+    in the preceding Lean theorems. -/
 theorem Nat.trichotomous (a b:Nat) : a < b ∨ a = b ∨ a > b := by
   -- This proof is written to follow the structure of the original text.
   revert a; apply induction
   . have why : 0 ≤ b := b.zero_le
-    replace why := (Nat.le_iff_lt_or_eq _ _).mp why
+    replace why := (le_iff_lt_or_eq _ _).mp why
     tauto
   intro a ih
   rcases ih with case1 | case2 | case3
   . rw [lt_iff_succ_le] at case1
-    rw [Nat.le_iff_lt_or_eq] at case1
+    rw [le_iff_lt_or_eq] at case1
     tauto
   . have why : a++ > b := by sorry
     tauto
