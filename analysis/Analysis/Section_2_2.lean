@@ -21,6 +21,13 @@ Main constructions and results of this section:
 Note: at the end of this chapter, the `Chapter2.Nat` class will be deprecated in favor of the
 standard Mathlib class `_root_.Nat`, or `ℕ`.  However, we will develop the properties of
 `Chapter2.Nat` "by hand" for pedagogical purposes.
+
+## Tips from past users
+
+Users of the companion who have completed the exercises in this section are welcome to send their tips for future users in this section as PRs.
+
+- (Add tip here)
+
 -/
 
 namespace Chapter2
@@ -135,10 +142,12 @@ theorem Nat.add_pos_left {a:Nat} (b:Nat) (ha: a.IsPos) : (a + b).IsPos := by
   have : (a+b)++ ≠ 0 := succ_ne _
   exact this
 
-/-- Compare with Mathlib's `Nat.add_pos_right`. -/
+/-- Compare with Mathlib's `Nat.add_pos_right`.
+
+This theorem is a consequence of the previous theorem and `add_comm`, and `grind` can automatically discover such proofs.
+-/
 theorem Nat.add_pos_right {a:Nat} (b:Nat) (ha: a.IsPos) : (b + a).IsPos := by
-  rw [add_comm]
-  exact add_pos_left _ ha
+  grind [add_comm, add_pos_left]
 
 /-- Corollary 2.2.9 (if sum vanishes, then summands vanish).
     Compare with Mathlib's `Nat.add_eq_zero`. -/
@@ -146,12 +155,12 @@ theorem Nat.add_eq_zero (a b:Nat) (hab: a + b = 0) : a = 0 ∧ b = 0 := by
   -- This proof is written to follow the structure of the original text.
   by_contra h
   simp only [not_and_or, ←ne_eq] at h
-  rcases h with ha | hb
+  obtain ha | hb := h
   . rw [← isPos_iff] at ha
-    have : (a + b).IsPos := add_pos_left _ ha
+    observe : (a + b).IsPos
     contradiction
   rw [← isPos_iff] at hb
-  have : (a + b).IsPos := add_pos_right _ hb
+  observe : (a + b).IsPos
   contradiction
 
 /-
@@ -280,10 +289,9 @@ theorem Nat.not_lt_self {a: Nat} (h : a < a) : False := by
 
 theorem Nat.lt_of_le_of_lt {a b c : Nat} (hab: a ≤ b) (hbc: b < c) : a < c := by
   rw [lt_iff_add_pos] at *
-  rcases hab with ⟨d, hd⟩
-  rcases hbc with ⟨e, he1, he2⟩
-  use d + e
-  constructor
+  choose d hd using hab
+  choose e he1 he2 using hbc
+  use d + e; split_ands
   . exact add_pos_right d he1
   . rw [he2, hd, add_assoc]
 
@@ -298,11 +306,11 @@ theorem Nat.zero_le (a:Nat) : 0 ≤ a := by
 theorem Nat.trichotomous (a b:Nat) : a < b ∨ a = b ∨ a > b := by
   -- This proof is written to follow the structure of the original text.
   revert a; apply induction
-  . have why : 0 ≤ b := b.zero_le
-    replace why := (le_iff_lt_or_eq _ _).mp why
+  . observe why : 0 ≤ b
+    rw [le_iff_lt_or_eq] at why
     tauto
   intro a ih
-  rcases ih with case1 | case2 | case3
+  obtain case1 | case2 | case3 := ih
   . rw [lt_iff_succ_le] at case1
     rw [le_iff_lt_or_eq] at case1
     tauto
@@ -345,29 +353,21 @@ such as `order` and `calc` to be applicable to the Chapter 2 natural numbers. -/
 instance Nat.instLinearOrder : LinearOrder Nat where
   le_refl := ge_refl
   le_trans a b c hab hbc := ge_trans hbc hab
-  lt_iff_le_not_le := by
-    intro a b
+  lt_iff_le_not_ge a b := by
     constructor
-    intro h
-    constructor
-    . exact le_of_lt h
-    . by_contra h'
+    . intro h; refine ⟨ le_of_lt h, ?_ ⟩
+      by_contra h'
       exact not_lt_self (lt_of_le_of_lt h' h)
-
     rintro ⟨ h1, h2 ⟩
-    rw [lt_iff, ← le_iff]
-    constructor
-    exact h1
+    rw [lt_iff, ←le_iff]; refine ⟨ h1, ?_ ⟩
     by_contra h
-    rw [h] at h2
-    apply h2
-    exact ge_refl b
+    subst h
+    contradiction
   le_antisymm a b hab hba := ge_antisymm hba hab
-  le_total := by
-    intro a b
-    obtain h | h | h := trichotomous a b
+  le_total a b := by
+    obtain h | rfl | h := trichotomous a b
     . left; exact le_of_lt h
-    . simp [h, ge_refl]
+    . simp [ge_refl]
     . right; exact le_of_lt h
   toDecidableLE := decidableRel
 
@@ -389,9 +389,7 @@ example (a b c d e:Nat) (hab: a ≤ b) (hbc: b < c) (hcd: c ≤ d)
 /-- (Not from textbook) Nat has the structure of an ordered monoid. This allows for tactics
 such as `gcongr` to be applicable to the Chapter 2 natural numbers. -/
 instance Nat.isOrderedAddMonoid : IsOrderedAddMonoid Nat where
-  add_le_add_left := by
-    intro a b hab c
-    exact (add_le_add_left a b c).mp hab
+  add_le_add_left a b hab c := (add_le_add_left a b c).mp hab
 
 /-- This illustration of the `gcongr` tactic is not from the
     textbook. -/

@@ -59,6 +59,12 @@ Some technical notes:
   and type theory, we will not attempt to create a full equivalence between these two
   notions of sets. (As such, this makes this entire chapter optional from the point of view of
   the rest of the book, though we retain it for pedagogical purposes.)
+
+## Tips from past users
+
+Users of the companion who have completed the exercises in this section are welcome to send their tips for future users in this section as PRs.
+
+- (Add tip here)
 -/
 
 namespace Chapter3
@@ -166,7 +172,7 @@ lemma SetTheory.Set.nonempty_def {X:Set} (h: X ≠ ∅) : ∃ x, x ∈ X := by
   -- This proof is written to follow the structure of the original text.
   by_contra! this
   have claim (x:Object) : x ∈ X ↔ x ∈ (∅:Set) := by simp [this, not_mem_empty]
-  replace claim := ext claim
+  apply ext at claim
   contradiction
 
 theorem SetTheory.Set.nonempty_of_inhabited {X:Set} {x:Object} (h:x ∈ X) : X ≠ ∅ := by
@@ -280,11 +286,10 @@ theorem SetTheory.Set.union_assoc (A B C:Set) : (A ∪ B) ∪ C = A ∪ (B ∪ C
   -- this proof is written to follow the structure of the original text.
   ext x
   constructor
-  . intro hx
-    rw [mem_union] at hx
-    rcases hx with case1 | case2
+  . intro hx; rw [mem_union] at hx
+    obtain case1 | case2 := hx
     . rw [mem_union] at case1
-      rcases case1 with case1a | case1b
+      obtain case1a | case1b := case1
       . rw [mem_union]; tauto
       have : x ∈ B ∪ C := by rw [mem_union]; tauto
       rw [mem_union]; tauto
@@ -358,8 +363,8 @@ theorem SetTheory.Set.subset_trans {A B C:Set} (hAB:A ⊆ B) (hBC:B ⊆ C) : A �
   rw [subset_def]
   intro x hx
   rw [subset_def] at hAB
-  replace hx := hAB x hx
-  replace hx := hBC x hx
+  apply hAB x at hx
+  apply hBC x at hx
   assumption
 
 /-- Proposition 3.1.17 (Partial ordering by set inclusion) -/
@@ -508,15 +513,13 @@ theorem  SetTheory.Set.union_inter_distrib_left (A B C:Set) :
 theorem SetTheory.Set.union_compl {A X:Set} (hAX: A ⊆ X) : A ∪ (X \ A) = X := by sorry
 
 /-- Proposition 3.1.27(f) -/
-theorem SetTheory.Set.inter_compl {A X:Set} (hAX: A ⊆ X) : A ∩ (X \ A) = ∅ := by sorry
+theorem SetTheory.Set.inter_compl {A X:Set} : A ∩ (X \ A) = ∅ := by sorry
 
 /-- Proposition 3.1.27(g) -/
-theorem SetTheory.Set.compl_union {A B X:Set} (hAX: A ⊆ X) (hBX: B ⊆ X) :
-    X \ (A ∪ B) = (X \ A) ∩ (X \ B) := by sorry
+theorem SetTheory.Set.compl_union {A B X:Set} : X \ (A ∪ B) = (X \ A) ∩ (X \ B) := by sorry
 
 /-- Proposition 3.1.27(g) -/
-theorem SetTheory.Set.compl_inter {A B X:Set} (hAX: A ⊆ X) (hBX: B ⊆ X) :
-    X \ (A ∩ B) = (X \ A) ∪ (X \ B) := by sorry
+theorem SetTheory.Set.compl_inter {A B X:Set} : X \ (A ∩ B) = (X \ A) ∪ (X \ B) := by sorry
 
 /-- Not from textbook: sets form a distributive lattice. -/
 instance SetTheory.Set.instDistribLattice : DistribLattice Set where
@@ -614,6 +617,14 @@ example : Set := {1, 2, 3}
 lemma SetTheory.Object.ofnat_eq {n:ℕ} : ((n:Nat):Object) = (n:Object) := rfl
 
 lemma SetTheory.Object.ofnat_eq' {n:ℕ} : (ofNat(n):Object) = (n:Object) := rfl
+
+@[simp]
+lemma SetTheory.Object.ofnat_eq'' {n:Nat} : ((n:ℕ):Object) = (n: Object) := by
+  simp [instNatCast, Nat.cast, Set.instNatCast]
+
+@[simp]
+lemma SetTheory.Object.ofnat_eq''' {n:ℕ} {hn} : ((⟨(n:Object), hn⟩: nat): ℕ) = n := by
+  simp [instNatCast, Nat.cast, Set.instNatCast]
 
 lemma SetTheory.Set.nat_coe_eq {n:ℕ} : (n:Nat) = OfNat.ofNat n := rfl
 
@@ -831,7 +842,7 @@ theorem SetTheory.Set.coe_inj' (X Y:Set) :
 
 /-- Compatibility of the membership operation ∈ -/
 theorem SetTheory.Set.mem_coe (X:Set) (x:Object) : x ∈ (X : _root_.Set Object) ↔ x ∈ X := by
-  simp [Coe.coe]
+  simp
 
 /-- Compatibility of the emptyset -/
 theorem SetTheory.Set.coe_empty : ((∅:Set) : _root_.Set Object) = ∅ := by sorry

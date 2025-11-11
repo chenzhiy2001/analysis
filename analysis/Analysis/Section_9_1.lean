@@ -81,7 +81,7 @@ example : ¬ AdherentPt 2 (.Ioo 0 1) := by sorry
 theorem closure_def (X:Set ℝ) : closure X = { x | AdherentPt x X } := by
   ext; simp [Real.mem_closure_iff, AdherentPt, Real.adherent']
   constructor <;> intro h ε hε
-  all_goals obtain ⟨ y, hy, hxy ⟩ := h (ε/2) (half_pos hε); exact ⟨ y, hy, by rw [abs_sub_comm]; linarith ⟩
+  all_goals choose y hy hxy using h _ (half_pos hε); exact ⟨ _, hy, by rw [abs_sub_comm]; linarith ⟩
 
 theorem closure_def' (X:Set ℝ) (x :ℝ) : x ∈ closure X ↔ AdherentPt x X := by
   simp [closure_def]
@@ -111,19 +111,18 @@ theorem closure_of_Ioo {a b:ℝ} (h:a < b) : closure (.Ioo a b) = .Icc a b := by
   ext x; simp [closure_def, AdherentPt, Real.adherent']
   constructor
   . intro h; contrapose! h
-    rcases le_or_gt a x with h' | h'
+    obtain h' | h' := le_or_gt a x
     . specialize h h'
       use x-b, by linarith
-      intro y ⟨ h1, h2 ⟩; observe : x-y ≤ |x-y|; linarith
+      intro y ⟨ _, _ ⟩; observe : x-y ≤ |x-y|; linarith
     use a-x, by linarith
-    intro y ⟨ h1, h2 ⟩; observe : -(x-y) ≤ |x-y|; linarith
+    intro y ⟨ _, _ ⟩; observe : -(x-y) ≤ |x-y|; linarith
   intro ⟨ h1, h2 ⟩
   by_cases ha : x = a
   . sorry
   by_cases hb : x = b
   . sorry
-  intro ε hε
-  use x, ⟨ by contrapose! ha; linarith, by contrapose! hb; linarith ⟩; simp; order
+  intro ε _; use x, (by grind); simp; order
 
 theorem closure_of_Ioc {a b:ℝ} (h:a < b) : closure (.Ioc a b) = .Icc a b := by
   sorry
@@ -220,7 +219,7 @@ theorem isClosed_iff_limits_mem (X: Set ℝ) :
   rw [isClosed_def']
   constructor
   . intro h _ L _ _; apply h L; rw [limit_of_AdherentPt]; solve_by_elim
-  intro _ _ hx; rw [limit_of_AdherentPt] at hx; obtain ⟨ _, _, _ ⟩ := hx; solve_by_elim
+  intro _ _ hx; rw [limit_of_AdherentPt] at hx; grind
 
 /-- Definition 9.1.18 (Limit points) -/
 abbrev LimitPt (x:ℝ) (X: Set ℝ) := AdherentPt x (X \ {x})
@@ -244,17 +243,6 @@ theorem LimitPt.iff_limit (x:ℝ) (X: Set ℝ) :
   LimitPt x X ↔ ∃ a : ℕ → ℝ, (∀ n, a n ∈ X \ {x}) ∧ Filter.atTop.Tendsto a (nhds x) := by
   simp [limit_of_AdherentPt]
 
-
-open Filter in
-/-- This lemma is in more recent versions of Mathlib and can be deleted once Mathlib is updated. -/
-theorem tendsto_mul_add_inv_atTop_nhds_zero (a c : ℝ) (ha : a ≠ 0) :
-    atTop.Tendsto (fun x => (a * x + c)⁻¹) (nhds 0) := by
-  obtain ha' | ha' := lt_or_gt_of_ne ha
-  · exact tendsto_inv_atBot_zero.comp
-      (tendsto_atBot_add_const_right _ c (tendsto_id.const_mul_atTop_of_neg ha'))
-  · exact tendsto_inv_atTop_zero.comp
-      (tendsto_atTop_add_const_right _ c (tendsto_id.const_mul_atTop ha'))
-
 /-- Lemma 9.1.21 -/
 theorem mem_Icc_isLimit {a b x:ℝ} (h: a < b) (hx: x ∈ Set.Icc a b) : LimitPt x (.Icc a b) := by
   -- This proof is written to follow the structure of the original text, with some slight simplifications.
@@ -269,15 +257,12 @@ theorem mem_Icc_isLimit {a b x:ℝ} (h: a < b) (hx: x ∈ Set.Icc a b) : LimitPt
       have : n + (b - x)⁻¹ > 0 := by linarith
       have : (n+(b - x)⁻¹)⁻¹ > 0 := by positivity
       have : (b-x)⁻¹ ≤ n + (b - x)⁻¹ := by linarith
-      have : (n + (b - x)⁻¹)⁻¹ ≤ b-x := by rwa [inv_le_comm₀ (by positivity) (by positivity)]
-      refine ⟨ ⟨ ?_, ?_⟩, ?_ ⟩ <;> linarith
+      have : (n + (b - x)⁻¹)⁻¹ ≤ b-x := by rwa [inv_le_comm₀ ?_ ?_] <;> positivity
+      grind
     convert Filter.Tendsto.const_add x (c := 0) _; simp
     convert Filter.Tendsto.comp (f := fun (k:ℕ) ↦ (k:ℝ)) (g := fun k ↦ 1/(k+(b-x)⁻¹)) _ tendsto_natCast_atTop_atTop
     convert tendsto_mul_add_inv_atTop_nhds_zero 1 (b - x)⁻¹ (by norm_num) using 2 with n; simp
   sorry
-
-
-
 
 theorem mem_Ico_isLimit {a b x:ℝ} (hx: x ∈ Set.Ico a b) : LimitPt x (.Ico a b) := by
   sorry
@@ -310,7 +295,7 @@ theorem isBounded_def (X: Set ℝ) : Bornology.IsBounded X ↔ ∃ M > 0, X ⊆ 
   constructor
   . intro ⟨ C, hC ⟩; use (max C 1)
     refine ⟨ lt_of_lt_of_le (by norm_num) (le_max_right _ _), ?_ ⟩
-    peel hC with x hx hC; rw [abs_le'] at hC; simp [hC.1, hC.2]; linarith [le_max_left C 1]
+    peel hC with x hx hC; rw [abs_le'] at hC; simp [hC.1]; linarith [le_max_left C 1]
   intro ⟨ M, hM, hXM ⟩; use M; intro x hx; specialize hXM hx; simp_all [abs_le']; linarith [hXM.1]
 
 /-- Example 9.1.23 -/
@@ -390,6 +375,5 @@ example (I: Finset ℝ) : IsClosed (I:Set ℝ) ∧ Bornology.IsBounded (I:Set �
 /-- Exercise 9.1.15 -/
 example {E:Set ℝ} (hE: Bornology.IsBounded E) (hnon: E.Nonempty): AdherentPt (sSup E) E ∧ AdherentPt (sSup E) Eᶜ := by
   sorry
-
 
 end Chapter9

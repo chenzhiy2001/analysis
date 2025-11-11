@@ -21,6 +21,13 @@ Main constructions and results of this section:
 Note: at the end of this chapter, the `Chapter2.Nat` class will be deprecated in favor of the
 standard Mathlib class `_root_.Nat`, or `ℕ`.  However, we will develop the properties of
 `Chapter2.Nat` "by hand" for pedagogical purposes.
+
+## Tips from past users
+
+Users of the companion who have completed the exercises in this section are welcome to send their tips for future users in this section as PRs.
+
+- (Add tip here)
+
 -/
 
 namespace Chapter2
@@ -122,7 +129,7 @@ Compare with Mathlib's `Nat.mul_lt_mul_of_pos_right` -/
 theorem Nat.mul_lt_mul_of_pos_right {a b c: Nat} (h: a < b) (hc: c.IsPos) : a * c < b * c := by
   -- This proof is written to follow the structure of the original text.
   rw [lt_iff_add_pos] at h
-  obtain ⟨ d, hdpos, hd ⟩ := h
+  choose d hdpos hd using h
   replace hd := congr($hd * c)
   rw [add_mul] at hd
   have hdcpos : (d * c).IsPos := pos_mul_pos hdpos hc
@@ -148,13 +155,13 @@ Compare with Mathlib's `Nat.mul_right_cancel` -/
 lemma Nat.mul_cancel_right {a b c: Nat} (h: a * c = b * c) (hc: c.IsPos) : a = b := by
   -- This proof is written to follow the structure of the original text.
   have := trichotomous a b
-  rcases this with hlt | heq | hgt
+  obtain hlt | rfl | hgt := this
   . replace hlt := mul_lt_mul_of_pos_right hlt hc
-    replace hlt := ne_of_lt _ _ hlt
+    apply ne_of_lt at hlt
     contradiction
-  . assumption
+  . rfl
   replace hgt := mul_gt_mul_of_pos_right hgt hc
-  replace hgt := ne_of_gt _ _ hgt
+  apply ne_of_gt at hgt
   contradiction
 
 /-- (Not from textbook) Nat is an ordered semiring.

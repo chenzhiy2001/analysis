@@ -28,6 +28,13 @@ implemented in the Chapter 3 framework.
 We will work here with the version `Nat` of the natural numbers internal to the Chapter 3 set
 theory, though usually we will use coercions to then immediately translate to the Mathlib
 natural numbers `ℕ`.
+
+## Tips from past users
+
+Users of the companion who have completed the exercises in this section are welcome to send their tips for future users in this section as PRs.
+
+- (Add tip here)
+
 -/
 
 
@@ -102,7 +109,7 @@ abbrev SetTheory.Set.P_3_3_3b : Nat → Nat → Prop := fun x y ↦ (y+1:ℕ) = 
 
 theorem SetTheory.Set.not_P_3_3_3b_existsUnique : ¬ ∀ x, ∃! y: Nat, P_3_3_3b x y := by
   by_contra h
-  obtain ⟨ n, hn, _ ⟩ := h (0:Nat)
+  choose n hn _ using h (0:Nat)
   have : ((0:Nat):ℕ) = 0 := by simp [OfNat.ofNat]
   simp [P_3_3_3b, this] at hn
 
@@ -116,7 +123,7 @@ theorem SetTheory.Set.P_3_3_3c_existsUnique (x: (Nat \ {(0:Object)}: Set)) :
   obtain ⟨ x, hx ⟩ := x; simp at hx; obtain ⟨ hx1, hx2 ⟩ := hx
   set n := ((⟨ x, hx1 ⟩:Nat):ℕ)
   have : x = (n:Nat) := by simp [n]
-  simp [P_3_3_3c, this, SetTheory.Object.ofnat_eq'] at hx2 ⊢
+  simp [P_3_3_3c, this, Object.ofnat_eq'] at hx2 ⊢
   replace hx2 : n = (n-1) + 1 := by omega
   apply ExistsUnique.intro ((n-1:ℕ):Nat)
   . simp [←hx2]
@@ -131,8 +138,8 @@ theorem SetTheory.Set.f_3_3_3c_eval (x: (Nat \ {(0:Object)}: Set)) (y: Nat) :
 /-- Create a version of a non-zero `n` inside `Nat \ {0}` for any natural number n. -/
 abbrev SetTheory.Set.coe_nonzero (n:ℕ) (h: n ≠ 0): (Nat \ {(0:Object)}: Set) :=
   ⟨((n:ℕ):Object), by
-    simp [SetTheory.Object.ofnat_eq',h]
-    rw [←SetTheory.Object.ofnat_eq]
+    simp [Object.ofnat_eq',h]
+    rw [←Object.ofnat_eq]
     exact Subtype.property _
   ⟩
 
@@ -235,7 +242,7 @@ theorem Function.comp_eval {X Y Z: Set} (g: Function Y Z) (f: Function X Y) (x: 
 -/
 theorem Function.comp_eq_comp {X Y Z: Set} (g: Function Y Z) (f: Function X Y) :
     (g ○ f).to_fn = g.to_fn ∘ f.to_fn := by
-  ext; simp only [Function.comp_eval, Function.comp_apply, to_fn_eval]
+  ext; simp only [Function.comp_eval, Function.comp_apply]
 
 /-- Example 3.3.14 -/
 abbrev SetTheory.Set.f_3_3_14 : Function Nat Nat := Function.mk_fn (fun x ↦ (2*x:ℕ))
@@ -244,18 +251,18 @@ abbrev SetTheory.Set.g_3_3_14 : Function Nat Nat := Function.mk_fn (fun x ↦ (x
 
 theorem SetTheory.Set.g_circ_f_3_3_14 :
     g_3_3_14 ○ f_3_3_14 = Function.mk_fn (fun x ↦ ((2*(x:ℕ)+3:ℕ):Nat)) := by
-  simp [Function.eq_iff, Function.comp_eval, Function.eval_of]
+  simp [Function.eq_iff, Function.eval_of]
 
 theorem SetTheory.Set.f_circ_g_3_3_14 :
     f_3_3_14 ○ g_3_3_14 = Function.mk_fn (fun x ↦ ((2*(x:ℕ)+6:ℕ):Nat)) := by
-  simp [Function.eq_iff, Function.comp_eval, Function.eval_of]
+  simp [Function.eq_iff, Function.eval_of]
   intros; ring
 
 /-- Lemma 3.3.15 (Composition is associative) -/
 theorem SetTheory.Set.comp_assoc {W X Y Z: Set} (h: Function Y Z) (g: Function X Y)
   (f: Function W X) :
     h ○ (g ○ f) = (h ○ g) ○ f := by
-  simp [Function.eq_iff, Function.comp_eval]
+  simp [Function.eq_iff]
 
 abbrev Function.one_to_one {X Y: Set} (f: Function X Y) : Prop := ∀ x x': X, x ≠ x' → f x ≠ f x'
 
@@ -426,13 +433,13 @@ theorem Function.comp_of_surj {X Y Z:Set} {f: Function X Y} {g : Function Y Z} (
   (hg: g.onto) : (g ○ f).onto := by sorry
 
 /--
-  Exercise 3.3.3 - fill in the sorrys in the statements in  a reasonable fashion.
+  Exercise 3.3.3 - fill in the sorrys in the statements in a reasonable fashion.
 -/
-example (X: Set) : (SetTheory.Set.f_3_3_11 X).one_to_one ↔ sorry := by sorry
+theorem empty_function_one_to_one_iff (X: Set) (f: Function ∅ X) : f.one_to_one ↔ sorry := by sorry
 
-example (X: Set) : (SetTheory.Set.f_3_3_11 X).onto ↔ sorry := by sorry
+theorem empty_function_onto_iff (X: Set) (f: Function ∅ X) : f.onto ↔ sorry := by sorry
 
-example (X: Set) : (SetTheory.Set.f_3_3_11 X).bijective ↔ sorry := by sorry
+theorem empty_function_bijective_iff (X: Set) (f: Function ∅ X) : f.bijective ↔ sorry:= by sorry
 
 /--
   Exercise 3.3.4.
@@ -457,15 +464,15 @@ def Function.comp_cancel_right_without_hg : Decidable (∀ (X Y Z:Set) (f: Funct
 theorem Function.comp_injective {X Y Z:Set} {f: Function X Y} {g : Function Y Z} (hinj :
     (g ○ f).one_to_one) : f.one_to_one := by sorry
 
-theorem Function.comp_surjective {X Y Z:Set} {f: Function X Y} {g : Function Y Z}
-  (hinj : (g ○ f).onto) : g.onto := by sorry
+theorem Function.comp_surjective {X Y Z:Set} {f: Function X Y} {g : Function Y Z} (hsurj :
+    (g ○ f).onto) : g.onto := by sorry
 
 def Function.comp_injective' : Decidable (∀ (X Y Z:Set) (f: Function X Y) (g : Function Y Z) (hinj :
     (g ○ f).one_to_one), g.one_to_one) := by
   -- the first line of this construction should be either `apply isTrue` or `apply isFalse`.
   sorry
 
-def Function.comp_surjective' : Decidable (∀ (X Y Z:Set) (f: Function X Y) (g : Function Y Z) (hinj :
+def Function.comp_surjective' : Decidable (∀ (X Y Z:Set) (f: Function X Y) (g : Function Y Z) (hsurj :
     (g ○ f).onto), f.onto) := by
   -- the first line of this construction should be either `apply isTrue` or `apply isFalse`.
   sorry
